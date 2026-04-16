@@ -1,25 +1,29 @@
-from dash import Dash, html, dcc, callback, Output, Input
+from dash import Dash, html, dcc
 import plotly.express as px
 import pandas as pd
 
-df = pd.read_csv('https://raw.githubusercontent.com/plotly/datasets/master/gapminder_unfiltered.csv')
+# Load and prepare data
+df = pd.read_csv('formatted_data.csv')
+df["date"] = pd.to_datetime(df["date"]) # Convert strings to dates
+df = df.sort_values(by="date")
 
-app = Dash()
+# Create the figure
+fig = px.line(df, x="date", y="sales", 
+              title="Pink Morsel Sales Over Time",
+              labels={"date": "Date", "sales": "Sales ($)"})
 
-# Requires Dash 2.17.0 or later
-app.layout = [
-    html.H1(children='Title of Dash App', style={'textAlign':'center'}),
-    dcc.Dropdown(df.country.unique(), 'Canada', id='dropdown-selection'),
-    dcc.Graph(id='graph-content')
-]
-
-@callback(
-    Output('graph-content', 'figure'),
-    Input('dropdown-selection', 'value')
+# Simple vertical line fix
+fig.add_shape(
+    type="line", line_color="red", line_dash="dash",
+    x0="2021-01-15", x1="2021-01-15", y0=0, y1=1, yref="paper"
 )
-def update_graph(value):
-    dff = df[df.country==value]
-    return px.line(dff, x='year', y='pop')
+
+app = Dash(__name__)
+
+app.layout = html.Div([
+    html.H1("Pink Morsel Visualiser", style={'textAlign': 'center'}),
+    dcc.Graph(id='sales-chart', figure=fig)
+])
 
 if __name__ == '__main__':
     app.run(debug=True)
